@@ -52,30 +52,85 @@
 
 ## Установка
 
+Требуется Python 3.11+. Поддержка AVIF — нативно через Pillow 12.
+
 ```bash
-pip install -r requirements.txt
+# только библиотека + CLI (ядро, без GUI)
+pip install .
+
+# вместе с десктоп-GUI (PySide6)
+pip install ".[gui]"
 ```
 
-Требуется Python 3.11+. Поддержка AVIF — нативно через Pillow 12.
+После установки доступны команды `mangalib-dl` (CLI) и `mangalib-dl-gui` (GUI).
+Для запуска из исходников установка не обязательна — см. ниже.
 
 ## Запуск (GUI)
 
 ```bash
+mangalib-dl-gui          # после установки с [gui]
+# или из исходников:
 python app.py
 ```
 
 Вставь ссылку → «Загрузить» → выбери перевод и главы → укажи папку → «Скачать».
+Либо «Каталог…» — поиск/просмотр тайтлов прямо в приложении.
 
 ## Запуск (CLI)
 
 ```bash
-python cli.py info "https://mangalib.me/ru/manga/7965--chainsaw-man"
-python cli.py branches 7965--chainsaw-man
-python cli.py download 7965--chainsaw-man --chapters 1-5 --branch 4666 -o downloads
+mangalib-dl info "https://mangalib.me/ru/manga/7965--chainsaw-man"
+mangalib-dl branches 7965--chainsaw-man
+mangalib-dl download 7965--chainsaw-man --chapters 1-5 --branch 4666 -o downloads
+# из исходников те же команды доступны как `python cli.py …`
 
 # лицензированные / 18+ тайтлы — с токеном
 python cli.py --token "ТОКЕН" download 247--shingeki-no-kyojin --chapters 1 --branch 1
 ```
+
+## Использование как библиотеки
+
+Ядро `mangalib_dl` не зависит от GUI (импорт пакета не тянет PySide6) — его можно
+встраивать в свой код:
+
+```python
+import asyncio
+from pathlib import Path
+from mangalib_dl import (
+    MangaLibClient, DownloadService, DownloadOptions, list_branches, parse_slug,
+)
+
+async def main():
+    async with MangaLibClient(auth_token=None) as client:  # токен — по желанию
+        slug = parse_slug("https://mangalib.me/ru/manga/7965--chainsaw-man")
+        manga = await client.get_manga(slug)
+        chapters = await client.get_chapters(slug)
+        branch = list_branches(chapters)[0]           # самый полный перевод
+        options = DownloadOptions(output_root=Path("downloads"))
+        service = DownloadService(client, options)
+        report = await service.download(
+            manga, chapters[:3], branch.branch_id, branch.teams_summary)
+        print(report.chapters_done, "глав скачано")
+
+asyncio.run(main())
+```
+
+Полезное в публичном API: `MangaLibClient` (`get_manga`, `get_chapters`,
+`get_pages`, `get_catalog`, `get_chapter_detail`), `DownloadService`,
+`list_branches`, исключения `LockedChapterError` / `UnreleasedChapterError` /
+`LicensedTitleError`.
+
+## Сборка standalone .exe (Windows)
+
+```bash
+pip install ".[gui,build]"
+pyinstaller --noconfirm --onefile --windowed \
+    --name MangaLibDownloader --collect-all PIL app.py
+```
+
+Готовый файл — `dist/MangaLibDownloader.exe` (самодостаточный, ~55 МБ; Python и
+зависимости встроены, AVIF работает). `--collect-all PIL` обязателен — он
+кладёт в сборку кодек AVIF.
 
 ## Bearer-токен (для лицензированных / 18+ тайтлов)
 
@@ -94,19 +149,21 @@ python cli.py --token "ТОКЕН" download 247--shingeki-no-kyojin --chapters 1
 
 ## Архитектура
 
-Ядро (`mangalib_dl/`) не зависит от интерфейса — его используют и GUI, и CLI.
+Всё — один пакет `mangalib_dl`. Ядро не зависит от интерфейса (импорт пакета не
+тянет PySide6); GUI и CLI лежат в нём же отдельными модулями.
 
 | Модуль | Назначение |
 |---|---|
-| `api.py` | клиент API: ссылки, метаданные, главы, ветки, страницы, серверы |
-| `models.py` | модели: `Manga`, `Chapter`, `Branch`, `Page` |
-| `ratelimit.py` | токен-бакет, разбор `Retry-After`, запрос с ретраями |
-| `downloader.py` | параллельная загрузка страниц, детекция формата, AVIF→JPG |
-| `packager.py` | сборка CBZ, безопасные имена файлов |
-| `service.py` | оркестрация: выбранные главы выбранного перевода |
-| `storage.py` | сохранение токена и настроек между запусками |
-| `app.py` | десктоп-GUI на PySide6 (загрузка/скачка в фоновом `QThread`) |
-| `cli.py` | командный интерфейс |
+| `mangalib_dl/api.py` | клиент API: ссылки, метаданные, главы, ветки, страницы, каталог, серверы |
+| `mangalib_dl/models.py` | модели: `Manga`, `Chapter`, `Branch`, `Page` |
+| `mangalib_dl/ratelimit.py` | токен-бакет, разбор `Retry-After`, запрос с ретраями |
+| `mangalib_dl/downloader.py` | параллельная загрузка страниц, детекция формата, AVIF→JPG |
+| `mangalib_dl/packager.py` | сборка CBZ, безопасные имена файлов |
+| `mangalib_dl/service.py` | оркестрация: выбранные главы выбранного перевода |
+| `mangalib_dl/storage.py` | сохранение токена и настроек между запусками |
+| `mangalib_dl/gui.py` | десктоп-GUI на PySide6 (загрузка/скачка в фоновом `QThread`) |
+| `mangalib_dl/cli.py` | командный интерфейс |
+| `app.py`, `cli.py` | тонкие лаунчеры в корне (удобный запуск + цель PyInstaller) |
 
 ### Используемый API MangaLib
 

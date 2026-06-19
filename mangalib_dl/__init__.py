@@ -1,4 +1,10 @@
-"""Загрузчик глав манги с MangaLib через публичный JSON API."""
+"""Загрузчик глав манги с MangaLib через публичный JSON API.
+
+Ядро библиотеки не зависит от GUI: импорт `mangalib_dl` НЕ тянет PySide6.
+Графический интерфейс лежит в `mangalib_dl.gui` (требует extra `[gui]`).
+"""
+__version__ = "0.1.0"
+
 from .api import (
     LicensedTitleError,
     LockedChapterError,
@@ -36,4 +42,5 @@ __all__ = [
     "BranchOption",
     "list_branches",
     "storage",
+    "__version__",
 ]

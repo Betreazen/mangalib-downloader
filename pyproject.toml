@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mangalib-dl"
+version = "0.1.0"
+description = "Загрузчик глав манги с MangaLib: библиотека + CLI + десктоп-GUI"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Betreazen" }]
+keywords = ["mangalib", "manga", "downloader", "cbz", "comics"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = [
+    "httpx>=0.27",
+    "pillow>=12.0",
+]
+
+[project.optional-dependencies]
+# Графический интерфейс. Ядро (mangalib_dl) работает и без него.
+gui = ["PySide6>=6.7"]
+# Сборка standalone .exe.
+build = ["pyinstaller>=6.11"]
+
+[project.scripts]
+mangalib-dl = "mangalib_dl.cli:main"
+
+[project.gui-scripts]
+mangalib-dl-gui = "mangalib_dl.gui:main"
+
+[project.urls]
+Homepage = "https://github.com/Betreazen/mangalib-downloader"
+Repository = "https://github.com/Betreazen/mangalib-downloader"
+Issues = "https://github.com/Betreazen/mangalib-downloader/issues"
+
+[tool.setuptools]
+packages = ["mangalib_dl"]
