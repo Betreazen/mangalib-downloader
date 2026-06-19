@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# Загрузки и тестовые артефакты
+downloads/
+test_downloads/
+test_*/
+_test*.py
+_explore.py
+*.cbz
+*.log
+
+# Личные настройки Claude Code (правила разрешений и т.п.)
+.claude/settings.local.json
+
+# Секреты (на всякий случай — токен и так хранится в ~/.mangalib_downloader/)
+*.token
+_token*.txt
+
+# ОС
+.DS_Store
+Thumbs.db
