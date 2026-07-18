@@ -96,8 +96,13 @@ class MangaLibClient:
         auth_token: str | None = None,
         rate_rps: float = config.API_RATE_RPS,
         on_throttle=None,
+        api_base: str = config.API_BASE,
+        site_id: int = config.SITE_ID,
     ):
+        self.api_base = api_base
+        self.site_id = site_id
         headers = dict(config.DEFAULT_HEADERS)
+        headers["Site-Id"] = str(site_id)
         if auth_token:
             # JWT не содержит пробелов/переносов — вычищаем их (частая ошибка
             # копирования), кроме одного пробела после "Bearer".
@@ -138,7 +143,7 @@ class MangaLibClient:
     # ---- метаданные и главы ----
 
     async def get_manga(self, slug: str) -> Manga:
-        data = await self._get_json(f"{config.API_BASE}/manga/{slug}")
+        data = await self._get_json(f"{self.api_base}/manga/{slug}")
         return Manga.from_api(slug, data)
 
     async def get_catalog(
@@ -156,7 +161,7 @@ class MangaLibClient:
         Возвращает (items, has_next_page, seed). seed стоит передавать на
         следующих страницах, чтобы сохранить тот же порядок выдачи.
         """
-        params: dict = {"site_id[]": [config.SITE_ID], "page": page,
+        params: dict = {"site_id[]": [self.site_id], "page": page,
                         "fields[]": ["rate_avg", "rate", "releaseDate"]}
         if query:
             params["q"] = query
@@ -167,14 +172,14 @@ class MangaLibClient:
             params["sort_type"] = sort_type
         if seed:
             params["seed"] = seed
-        data = await self._get_json(f"{config.API_BASE}/manga", params)
+        data = await self._get_json(f"{self.api_base}/manga", params)
         meta = data.get("meta") or {}
         return (data.get("data") or [],
                 bool(meta.get("has_next_page")),
                 meta.get("seed"))
 
     async def get_chapters(self, slug: str) -> list[Chapter]:
-        data = await self._get_json(f"{config.API_BASE}/manga/{slug}/chapters")
+        data = await self._get_json(f"{self.api_base}/manga/{slug}/chapters")
         items = data.get("data")
         if not isinstance(items, list):
             raise MangaLibError(f"Неожиданный ответ для глав: {slug}")
@@ -203,7 +208,7 @@ class MangaLibClient:
         params: dict = {"number": str(number), "volume": str(volume)}
         if branch_id is not None:
             params["branch_id"] = branch_id
-        data = await self._get_json(f"{config.API_BASE}/manga/{slug}/chapter", params)
+        data = await self._get_json(f"{self.api_base}/manga/{slug}/chapter", params)
         return data.get("data") or {}
 
     async def get_pages(
@@ -256,10 +261,10 @@ class MangaLibClient:
         servers: list[str] = []
         try:
             data = await self._get_json(
-                f"{config.API_BASE}/constants", {"fields[]": "imageServers"}
+                f"{self.api_base}/constants", {"fields[]": "imageServers"}
             )
             for s in (data.get("data") or {}).get("imageServers", []):
-                if config.SITE_ID in (s.get("site_ids") or []):
+                if self.site_id in (s.get("site_ids") or []):
                     url = (s.get("url") or "").rstrip("/")
                     if url and url not in servers:
                         servers.append(url)

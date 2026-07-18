@@ -28,3 +28,7 @@ _token*.txt
 # ОС
 .DS_Store
 Thumbs.db
+
+# Артефакты graphify и бинарные архивы
+graphify-out/
+*.rar

@@ -60,6 +60,7 @@ async def request_with_retries(
     *,
     limiter: RateLimiter | None = None,
     params: dict | None = None,
+    headers: dict | None = None,
     on_throttle=None,
 ) -> httpx.Response:
     """GET/POST с уважением лимитов: токен-бакет, ретраи, 429/Retry-After.
@@ -71,7 +72,7 @@ async def request_with_retries(
         if limiter is not None:
             await limiter.acquire()
         try:
-            resp = await client.request(method, url, params=params)
+            resp = await client.request(method, url, params=params, headers=headers)
             if resp.status_code in config.RETRY_STATUS:
                 retry_after = parse_retry_after(resp.headers.get("Retry-After"))
                 # Если сервер не подсказал — экспоненциальная пауза.
