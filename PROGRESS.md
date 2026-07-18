@@ -2,6 +2,47 @@
 
 Живой лог: что сделано, что дальше. Свежее — сверху.
 
+## 2026-07-18 — Фаза 1: контракт + движок в mangadl-core (СДЕЛАНО, AC-1 почти весь зелёный)
+
+Порт ядра 1:1 с Python (паритет прежде красоты). Новые модули `mangadl-core/src/`:
+- `source.rs` — трейт `MangaSource` + DTO `SearchResult/ChapterInfo/PageInfo`
+  (serde, `label()`), `SourceStatus`. Дословно по ARCHITECTURE §2.
+- `error.rs` — `SourceError` (thiserror): Http/Parse/AuthRequired/Locked/
+  Unreleased/NotImplemented + явный `Io` (в Python это OSError).
+- `config.rs` — константы config.py 1:1 (RPS, ретраи, таймауты, quality).
+- `http.rs` — порт ratelimit.py: `rate_limiter` (governor, burst=ceil(rps)),
+  `parse_retry_after` (секунды/HTTP-дата, потолок 120с), `request_with_retries`
+  (429/5xx, Retry-After, экспонента 1.6^n, 429 без подсказки ≥5с, ретраи
+  транспортных ошибок). `RetryPolicy` с Default=Python (тесты дают малые паузы).
+- `convert.rs` — `detect_ext` (magic-байты, порт `_detect_ext`) + `to_jpeg`
+  (image). AVIF-декод за фичей `avif` (dav1d) — см. «Известное» ниже.
+- `package.rs` — `safe_name` + `make_cbz` (zip, STORED) — порт packager.py.
+- `storage.rs` — трейт `OutputStorage` (ARCHITECTURE §11.1) + `FsStorage`;
+  ядро пишет на диск только через трейт (Android SAF станет второй реализацией).
+- `download.rs` — `download_chapter_pages`: Semaphore+join_all, лимитер картинок,
+  per-request заголовки (Referer), имена `NNN.ext` по сигнатуре, прогресс-колбэк.
+
+Тесты (22, все зелёные; wiremock как mock-сервер из TESTING §5):
+429+Retry-After (реальное ожидание), экспонента 5xx, отказ после max_retries,
+404 без ретраев, token-bucket не превышает RPS (замер), parse_retry_after (4),
+detect_ext на magic-байтах, PNG/WebP→JPEG валидный, скачка 2 страниц с Referer +
+раскладка original/ + CBZ, битая страница роняет скачку (как gather).
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test` — зелёные.
+
+**Известное / хвосты AC-1:**
+- [ ] AVIF→JPEG: код готов (`to_jpeg` формат-агностичен), тест за фичей `avif`,
+  но dav1d на этой машине не собран (нет pkg-config/системной либы) — это ровно
+  spike Фазы 1b. reqwest 0.13: фича `query` нужна для `.query()` (добавлена).
+- [ ] Android-изоляция: локально нет NDK; в CI добавлен job `android-core`
+  (`cargo check -p mangadl-core --target aarch64-linux-android`) — подтвердится
+  первым push. Риск: aws-lc-sys (rustls) под NDK; если упрётся — сменить
+  TLS-провайдер на ring.
+- ponytail: backon в ретраях не используется (ручной цикл = построчный паритет
+  с Python); get_json/get_text-обёртки появятся с первым источником (Фаза 2).
+
+Дальше — Фаза 1b (AVIF/NDK spike) или Фаза 2 (реестр + агрегатор + senkuro/liblib).
+
 ## 2026-07-18 — Фаза 0: каркас cargo workspace (СДЕЛАНО, AC-0 зелёный)
 
 Пользователь дал «да» на исполнение — спека в работе. Создан `mangadl/`:

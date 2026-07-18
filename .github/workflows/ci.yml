@@ -1,4 +1,5 @@
-# CI Фазы 0 (AC-0): сборка + линт Rust-workspace на PR и push в main.
+# CI Фаз 0–1 (AC-0, AC-1): сборка + линт + тесты workspace,
+# плюс проверка платформонезависимости ядра под aarch64-linux-android (TESTING §CI).
 name: CI
 
 on:
@@ -30,3 +31,27 @@ jobs:
         run: cargo build --workspace
       - name: test
         run: cargo test --workspace
+
+  # AC-1: ядро обязано собираться под Android (изоляция от desktop-API).
+  android-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mangadl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mangadl
+          key: android
+      - name: cargo check (aarch64-linux-android)
+        # NDK предустановлен на ubuntu-latest; клэнги нужны aws-lc-sys (rustls).
+        run: |
+          TOOLCHAIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$TOOLCHAIN/aarch64-linux-android24-clang"
+          export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TOOLCHAIN/aarch64-linux-android24-clang"
+          cargo check -p mangadl-core --target aarch64-linux-android
