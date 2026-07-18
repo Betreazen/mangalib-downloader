@@ -1,0 +1,10 @@
+# Headless CLI (аналог sources/cli.py + doctor/test-source в Фазе 5)
+[package]
+name = "mangadl-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+mangadl-core = { path = "../mangadl-core" }

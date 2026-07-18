@@ -1,0 +1,32 @@
+# CI Фазы 0 (AC-0): сборка + линт Rust-workspace на PR и push в main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["mangadl/**", ".github/workflows/ci.yml"]
+  pull_request:
+    paths: ["mangadl/**", ".github/workflows/ci.yml"]
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mangadl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: mangadl
+      - name: rustfmt
+        run: cargo fmt --all --check
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: build
+        run: cargo build --workspace
+      - name: test
+        run: cargo test --workspace

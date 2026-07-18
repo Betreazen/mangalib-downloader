@@ -1,0 +1,4 @@
+[toolchain]
+# Фиксация тулчейна (TZ Фаза 0): stable, MSRV = rust-version в Cargo.toml
+channel = "stable"
+components = ["clippy", "rustfmt"]

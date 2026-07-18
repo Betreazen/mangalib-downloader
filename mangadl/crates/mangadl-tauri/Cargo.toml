@@ -1,0 +1,13 @@
+# Оболочка Tauri 2 (IPC-команды + Svelte-фронт).
+# ponytail: зависимость tauri и tauri.conf.json появятся в Фазе 4 через
+# `cargo tauri init` — сейчас пустой bin, чтобы AC-0 (build+clippy) был зелёным
+# без часовой сборки вебвью-стека ради пустого крейта.
+[package]
+name = "mangadl-tauri"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+mangadl-core = { path = "../mangadl-core" }

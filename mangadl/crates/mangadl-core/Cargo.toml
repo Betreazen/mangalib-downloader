@@ -1,0 +1,25 @@
+# Ядро (аналог mangalib_dl/sources) — БЕЗ Tauri и desktop-only API,
+# должно собираться под aarch64-linux-android (ARCHITECTURE §11.5).
+[package]
+name = "mangadl-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+async-trait = "0.1.89"
+backon = "1.6.0"
+chrono = "0.4.45"
+directories = "6.0.0"
+governor = "0.10.4"
+image = "0.25.10"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "http2", "gzip", "brotli", "json"] }
+scraper = "0.27.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+thiserror = "2.0.18"
+tokio = { version = "1.53.0", features = ["rt-multi-thread", "macros", "sync", "fs"] }
+tracing = "0.1.44"
+tracing-subscriber = "0.3.23"
+zip = "8.6.0"

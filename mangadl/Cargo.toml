@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/mangadl-core",
+    "crates/mangadl-cli",
+    "crates/mangadl-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.96"
+license = "MIT"
